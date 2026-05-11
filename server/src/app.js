@@ -10,8 +10,8 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use("/api/auth", authRoutes);
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 
 app.use(cookieParser());
 
