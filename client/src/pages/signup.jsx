@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../api/axios";
 
 // ─── Validators ───────────────────────────────────────────────
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 // Checks each password rule individually for strength indicator
 export const PASSWORD_RULES = [
-    { id: "length",    label: "At least 8 characters",       test: (v) => v.length >= 8 },
-    { id: "uppercase", label: "One uppercase letter (A–Z)",  test: (v) => /[A-Z]/.test(v) },
-    { id: "number",    label: "One number (0–9)",            test: (v) => /[0-9]/.test(v) },
-    { id: "special",   label: "One special character (!@#…)", test: (v) => /[^A-Za-z0-9]/.test(v) },
+    { id: "length", label: "At least 8 characters", test: (v) => v.length >= 8 },
+    { id: "uppercase", label: "One uppercase letter (A–Z)", test: (v) => /[A-Z]/.test(v) },
+    { id: "number", label: "One number (0–9)", test: (v) => /[0-9]/.test(v) },
+    { id: "special", label: "One special character (!@#…)", test: (v) => /[^A-Za-z0-9]/.test(v) },
 ];
 
 const validateFullName = (value) => {
@@ -53,9 +54,8 @@ const PasswordStrength = ({ password }) => {
                 {PASSWORD_RULES.map((_, i) => (
                     <div
                         key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                            i < passed ? colors[passed] : "bg-gray-200"
-                        }`}
+                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i < passed ? colors[passed] : "bg-gray-200"
+                            }`}
                     />
                 ))}
             </div>
@@ -67,9 +67,8 @@ const PasswordStrength = ({ password }) => {
                 {PASSWORD_RULES.map((rule) => (
                     <li
                         key={rule.id}
-                        className={`text-xs flex items-center gap-1.5 ${
-                            rule.test(password) ? "text-green-600" : "text-gray-400"
-                        }`}
+                        className={`text-xs flex items-center gap-1.5 ${rule.test(password) ? "text-green-600" : "text-gray-400"
+                            }`}
                     >
                         <span>{rule.test(password) ? "✅" : "○"}</span>
                         {rule.label}
@@ -95,11 +94,11 @@ const Signup = () => {
 
     const getError = (field, value) => {
         switch (field) {
-            case "full_name":        return validateFullName(value);
-            case "email":            return validateEmail(value);
-            case "password":         return validatePassword(value);
+            case "full_name": return validateFullName(value);
+            case "email": return validateEmail(value);
+            case "password": return validatePassword(value);
             case "confirm_password": return validateConfirmPassword(value, form.password);
-            default:                 return "";
+            default: return "";
         }
     };
 
@@ -130,30 +129,58 @@ const Signup = () => {
         setErrors((prev) => ({ ...prev, [id]: getError(id, value) }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
+        console.log("FORM SUBMITTED");
         e.preventDefault();
 
         const newErrors = {
-            full_name:        validateFullName(form.full_name),
-            email:            validateEmail(form.email),
-            password:         validatePassword(form.password),
-            confirm_password: validateConfirmPassword(form.confirm_password, form.password),
+            full_name: validateFullName(form.full_name),
+            email: validateEmail(form.email),
+            password: validatePassword(form.password),
+            confirm_password: validateConfirmPassword(
+                form.confirm_password,
+                form.password
+            ),
         };
+
         setErrors(newErrors);
-        setTouched({ full_name: true, email: true, password: true, confirm_password: true });
+
+        setTouched({
+            full_name: true,
+            email: true,
+            password: true,
+            confirm_password: true,
+        });
 
         const hasErrors = Object.values(newErrors).some(Boolean);
+
         if (hasErrors) return;
 
-        // ✅ Proceed with signup logic (API call etc.)
-        console.log("Signup submitted:", form);
+        try {
+
+            const response = await api.post("/auth/signup", {
+                email: form.email,
+                password: form.password,
+            });
+
+            localStorage.setItem(
+                "accessToken",
+                response.data.accessToken
+            );
+
+            console.log(response.data);
+
+        } catch (error) {
+
+            console.log(error.response.data);
+
+        }
     };
 
     const inputClass = (field) =>
-        `w-full pl-11 pr-11 py-3 border rounded-xl outline-none focus:ring-2 transition ${
-            errors[field] && touched[field]
-                ? "border-red-400 focus:ring-red-300 bg-red-50"
-                : "border-gray-300 focus:ring-blue-500"
+        `w-full pl-11 pr-11 py-3 border rounded-xl outline-none focus:ring-2 transition ${errors[field] && touched[field]
+            ? "border-red-400 focus:ring-red-300 bg-red-50"
+            : "border-gray-300 focus:ring-blue-500"
         }`;
 
     return (

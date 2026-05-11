@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../api/axios";
 
 // ─── Validators ───────────────────────────────────────────────
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -41,28 +42,47 @@ const Login = () => {
         setErrors((prev) => ({ ...prev, [id]: validators[id](value) }));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        const newErrors = {
-            email: validateEmail(form.email),
-            password: validatePassword(form.password),
-        };
-        setErrors(newErrors);
-        setTouched({ email: true, password: true });
-
-        const hasErrors = Object.values(newErrors).some(Boolean);
-        if (hasErrors) return;
-
-        // ✅ Proceed with login logic (API call etc.)
-        console.log("Login submitted:", form);
+    const newErrors = {
+        email: validateEmail(form.email),
+        password: validatePassword(form.password),
     };
 
+    setErrors(newErrors);
+
+    setTouched({
+        email: true,
+        password: true,
+    });
+
+    const hasErrors = Object.values(newErrors).some(Boolean);
+
+    if (hasErrors) return;
+
+    try {
+
+        const response = await api.post("/auth/login", form);
+
+        localStorage.setItem(
+            "accessToken",
+            response.data.accessToken
+        );
+
+        console.log(response.data);
+
+    } catch (error) {
+
+        console.log(error.response.data);
+
+    }
+};
+
     const inputClass = (field) =>
-        `w-full pl-11 pr-11 py-3 border rounded-xl outline-none focus:ring-2 transition ${
-            errors[field] && touched[field]
-                ? "border-red-400 focus:ring-red-300 bg-red-50"
-                : "border-gray-300 focus:ring-blue-500"
+        `w-full pl-11 pr-11 py-3 border rounded-xl outline-none focus:ring-2 transition ${errors[field] && touched[field]
+            ? "border-red-400 focus:ring-red-300 bg-red-50"
+            : "border-gray-300 focus:ring-blue-500"
         }`;
 
     return (
